@@ -2,8 +2,9 @@
 import pygame
 import time
 import random
+import sys
 
-snake_speed = 15
+paused = False
 
 # Window size
 window_x = 720
@@ -26,29 +27,6 @@ game_window = pygame.display.set_mode((window_x, window_y))
 # FPS (frames per second) controller
 fps = pygame.time.Clock()
 
-# defining snake default position
-snake_position = [100, 50]
-
-# defining first 4 blocks of snake body
-snake_body = [[100, 50],
-              [90, 50],
-              [80, 50],
-              [70, 50]
-              ]
-# fruit position
-fruit_position = [random.randrange(1, (window_x // 10)) * 10,
-                  random.randrange(1, (window_y // 10)) * 10]
-
-fruit_spawn = True
-
-# setting default snake direction towards
-# right
-direction = 'RIGHT'
-change_to = direction
-
-# initial score
-score = 0
-
 
 # displaying Score function
 def show_score(choice, color, font, size):
@@ -65,6 +43,37 @@ def show_score(choice, color, font, size):
 
     # displaying text
     game_window.blit(score_surface, score_rect)
+
+
+def menu_pause():
+    my_font = pygame.font.SysFont('times new roman', 50)
+    small_font = pygame.font.SysFont('times new roman', 30)
+
+    pause_surface = my_font.render('Paused', True, red)
+    pause_rect = pause_surface.get_rect(center=(window_x / 2, window_y / 4))
+
+    restart_surface = small_font.render('Press R to Restart', True, white)
+    restart_rect = restart_surface.get_rect(center=(window_x / 2, window_y / 2))
+
+    quit_surface = small_font.render('Press Q to Quit', True, white)
+    quit_rect = quit_surface.get_rect(center=(window_x / 2, window_y / 2 + 50))
+
+    while True:
+        game_window.fill(black)
+        game_window.blit(pause_surface, pause_rect)
+        game_window.blit(restart_surface, restart_rect)
+        game_window.blit(quit_surface, quit_rect)
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
+                elif event.key == pygame.K_r:
+                    game_loop()
+                elif event.key == pygame.K_q:
+                    pygame.quit()
+                    quit()
 
 
 # game over function
@@ -98,82 +107,88 @@ def game_over():
     quit()
 
 
-# Main Function
-while True:
+def game_loop():
+    global snake_position, snake_body, fruit_position, fruit_spawn, direction, change_to, score, snake_speed
 
-    # handling key events
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                change_to = 'UP'
-            if event.key == pygame.K_DOWN:
-                change_to = 'DOWN'
-            if event.key == pygame.K_LEFT:
-                change_to = 'LEFT'
-            if event.key == pygame.K_RIGHT:
-                change_to = 'RIGHT'
-
-    # If two keys pressed simultaneously
-    # we don't want snake to move into two
-    # directions simultaneously
-    if change_to == 'UP' and direction != 'DOWN':
-        direction = 'UP'
-    if change_to == 'DOWN' and direction != 'UP':
-        direction = 'DOWN'
-    if change_to == 'LEFT' and direction != 'RIGHT':
-        direction = 'LEFT'
-    if change_to == 'RIGHT' and direction != 'LEFT':
-        direction = 'RIGHT'
-
-    # Moving the snake
-    if direction == 'UP':
-        snake_position[1] -= 10
-    if direction == 'DOWN':
-        snake_position[1] += 10
-    if direction == 'LEFT':
-        snake_position[0] -= 10
-    if direction == 'RIGHT':
-        snake_position[0] += 10
-
-    # Snake body growing mechanism
-    # if fruits and snakes collide then scores
-    # will be incremented by 10
-    snake_body.insert(0, list(snake_position))
-    if snake_position[0] == fruit_position[0] and snake_position[1] == fruit_position[1]:
-        score += 10
-        fruit_spawn = False
-    else:
-        snake_body.pop()
-
-    if not fruit_spawn:
-        fruit_position = [random.randrange(1, (window_x // 10)) * 10,
-                          random.randrange(1, (window_y // 10)) * 10]
-
+    # Réinitialisation des variables à chaque nouveau départ
+    snake_position = [100, 50]
+    snake_body = [[100, 50],
+                  [90, 50],
+                  [80, 50],
+                  [70, 50]]
+    fruit_position = [random.randrange(1, (window_x // 10)) * 10,
+                      random.randrange(1, (window_y // 10)) * 10]
     fruit_spawn = True
-    game_window.fill(black)
+    direction = 'RIGHT'
+    change_to = direction
+    score = 0
+    snake_speed = 7
 
-    for pos in snake_body:
-        pygame.draw.rect(game_window, green,
-                         pygame.Rect(pos[0], pos[1], 10, 10))
-    pygame.draw.rect(game_window, white, pygame.Rect(
-        fruit_position[0], fruit_position[1], 10, 10))
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    change_to = 'UP'
+                if event.key == pygame.K_DOWN:
+                    change_to = 'DOWN'
+                if event.key == pygame.K_LEFT:
+                    change_to = 'LEFT'
+                if event.key == pygame.K_RIGHT:
+                    change_to = 'RIGHT'
+                if event.key == pygame.K_ESCAPE:
+                    menu_pause()
 
-    # Game Over conditions
-    if snake_position[0] < 0 or snake_position[0] > window_x - 10:
-        game_over()
-    if snake_position[1] < 0 or snake_position[1] > window_y - 10:
-        game_over()
+        if change_to == 'UP' and direction != 'DOWN':
+            direction = 'UP'
+        if change_to == 'DOWN' and direction != 'UP':
+            direction = 'DOWN'
+        if change_to == 'LEFT' and direction != 'RIGHT':
+            direction = 'LEFT'
+        if change_to == 'RIGHT' and direction != 'LEFT':
+            direction = 'RIGHT'
 
-    # Touching the snake body
-    for block in snake_body[1:]:
-        if snake_position[0] == block[0] and snake_position[1] == block[1]:
+        if direction == 'UP':
+            snake_position[1] -= 10
+        if direction == 'DOWN':
+            snake_position[1] += 10
+        if direction == 'LEFT':
+            snake_position[0] -= 10
+        if direction == 'RIGHT':
+            snake_position[0] += 10
+
+        snake_body.insert(0, list(snake_position))
+        if snake_position[0] == fruit_position[0] and snake_position[1] == fruit_position[1]:
+            score += 10
+            snake_speed += 2
+            fruit_spawn = False
+        else:
+            snake_body.pop()
+
+        if not fruit_spawn:
+            fruit_position = [random.randrange(1, (window_x // 10)) * 10,
+                              random.randrange(1, (window_y // 10)) * 10]
+
+        fruit_spawn = True
+        game_window.fill(black)
+
+        for pos in snake_body:
+            pygame.draw.rect(game_window, green,
+                             pygame.Rect(pos[0], pos[1], 10, 10))
+        pygame.draw.rect(game_window, white, pygame.Rect(
+            fruit_position[0], fruit_position[1], 10, 10))
+
+        if snake_position[0] < 0 or snake_position[0] > window_x - 10:
+            game_over()
+        if snake_position[1] < 0 or snake_position[1] > window_y - 10:
             game_over()
 
-    # displaying score continuously
-    show_score(1, white, 'times new roman', 20)
+        for block in snake_body[1:]:
+            if snake_position[0] == block[0] and snake_position[1] == block[1]:
+                game_over()
 
-    # Refresh game screen
-    pygame.display.update()
+        show_score(1, white, 'times new roman', 20)
+        pygame.display.update()
+        fps.tick(snake_speed)
 
-    # Frame Per Second /Refresh Rate
-    fps.tick(snake_speed)
+
+game_loop()
