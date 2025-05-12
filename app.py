@@ -18,14 +18,12 @@ green = pygame.Color(0, 255, 0)
 blue = pygame.Color(0, 0, 255)
 
 pygame.init()
-
 pygame.display.set_caption('Snakes')
 game_window = pygame.display.set_mode((window_x, window_y))
-
 fps = pygame.time.Clock()
 
 pseudo = ""
-score = 0  # Ajouté pour éviter un crash si score n'est pas défini ailleurs.
+score = 0
 
 def show_score(choice, color, font, size):
     score_font = pygame.font.SysFont(font, size)
@@ -59,7 +57,6 @@ def get_top_scores():
         file_path = os.path.join(script_dir, "scores.txt")
         with open(file_path, "r") as f:
             lines = f.readlines()
-        
         scores = []
         for line in lines:
             parts = line.strip().split(" - ")
@@ -70,7 +67,6 @@ def get_top_scores():
                     scores.append((pseudo, score))
                 except ValueError:
                     continue
-
         top_scores = sorted(scores, key=lambda x: x[1], reverse=True)[:3]
         return top_scores
     except:
@@ -94,9 +90,6 @@ def display_intro():
     recent_title_rect = recent_title.get_rect(topleft=(5, window_y / 3 - 150))
     top_title_rect = top_title.get_rect(topright=(window_x - 5, window_y / 3 - 150))
 
-    recent_lines = [tiny_font.render(score.strip(), True, white) for score in recent_scores]
-    top_lines = [tiny_font.render(f"{p} - {s}", True, white) for p, s in top_scores]
-
     pseudo = ""
 
     while True:
@@ -105,10 +98,12 @@ def display_intro():
         game_window.blit(recent_title, recent_title_rect)
         game_window.blit(top_title, top_title_rect)
 
-        for i, line in enumerate(recent_lines):
+        for i, line in enumerate([tiny_font.render(s.strip(), True, white) for s in recent_scores]):
             rect = line.get_rect(topleft=(5, window_y / 3 - 120 + i * 25))
             game_window.blit(line, rect)
-        for i, line in enumerate(top_lines):
+
+        for i, (p, s) in enumerate(top_scores):
+            line = tiny_font.render(f"{p} - {s}", True, white)
             rect = line.get_rect(topright=(window_x - 5, window_y / 3 - 120 + i * 25))
             game_window.blit(line, rect)
 
@@ -126,42 +121,42 @@ def display_intro():
                 if event.key == pygame.K_BACKSPACE:
                     pseudo = pseudo[:-1]
                 elif event.key == pygame.K_RETURN and len(pseudo) > 0:
-                    break  # on sort de la saisie
+                    return confirm_pseudo()
                 elif len(pseudo) < 8 and event.unicode.isalpha():
                     pseudo += event.unicode.upper()
 
-                    # Écran de confirmation
-                    while True:
-                        game_window.fill(black)
+def confirm_pseudo():
+    global pseudo
+    small_font = pygame.font.SysFont('times new roman', 30)
+    while True:
+        game_window.fill(black)
 
-                        confirm_text = small_font.render(f"Pseudo : {pseudo}", True, white)
-                        confirm_rect = confirm_text.get_rect(center=(window_x / 2, window_y / 3))
-                        modif_text = small_font.render("Appuyez sur M pour modifier", True, white)
-                        modif_rect = modif_text.get_rect(center=(window_x / 2, window_y / 2))
-                        start_text = small_font.render("Appuyez sur Entrée pour lancer le jeu", True, white)
-                        start_rect = start_text.get_rect(center=(window_x / 2, window_y / 2 + 40))
+        confirm_text = small_font.render(f"Pseudo : {pseudo}", True, white)
+        confirm_rect = confirm_text.get_rect(center=(window_x / 2, window_y / 3))
+        modif_text = small_font.render("Appuyez sur M pour modifier", True, white)
+        modif_rect = modif_text.get_rect(center=(window_x / 2, window_y / 2))
+        start_text = small_font.render("Appuyez sur Entrée pour lancer le jeu", True, white)
+        start_rect = start_text.get_rect(center=(window_x / 2, window_y / 2 + 40))
 
-                        game_window.blit(confirm_text, confirm_rect)
-                        game_window.blit(modif_text, modif_rect)
-                        game_window.blit(start_text, start_rect)
+        game_window.blit(confirm_text, confirm_rect)
+        game_window.blit(modif_text, modif_rect)
+        game_window.blit(start_text, start_rect)
+        pygame.display.update()
 
-                        pygame.display.update()
-
-                        for event in pygame.event.get():
-                            if event.type == pygame.QUIT:
-                                pygame.quit()
-                                sys.exit()
-                            if event.type == pygame.KEYDOWN:
-                                if event.key == pygame.K_m:
-                                    pseudo = ""
-                                    return display_intro()
-                                if event.key == pygame.K_RETURN:
-                                    game_loop()
-                                    return
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_m:
+                    pseudo = ""
+                    return display_intro()
+                elif event.key == pygame.K_RETURN:
+                    return game_loop()
 
 def reset_game():
     global pseudo
-    pseudo = ""  # Réinitialiser le pseudo (ou d'autres variables si nécessaire)
+    pseudo = ""
     display_intro()
 
 def menu():
@@ -176,19 +171,16 @@ def menu():
         resume_rect = resume_surface.get_rect(center=(window_x / 2, window_y / 3 + 25))
     else:
         menu_surface = my_font.render('GAME OVER', True, red)
-        save_score(score, pseudo)  # Sauvegarder le score lorsque le jeu est terminé
+        save_score(score, pseudo)
 
     menu_rect = menu_surface.get_rect(center=(window_x / 2, window_y / 8))
-
     score_surface = small_font.render('Score : ' + str(score), True, green)
     score_rect = score_surface.get_rect(center=(window_x / 2, window_y / 4))
 
     restart_surface = small_font.render('Press R to Restart', True, white)
     restart_rect = restart_surface.get_rect(center=(window_x / 2, window_y / 3 + 75))
-
-    reset_surface = small_font.render('Press C to Reset Game', True, white)
+    reset_surface = small_font.render('Press C to go back to Homepage', True, white)
     reset_rect = reset_surface.get_rect(center=(window_x / 2, window_y / 3 + 125))
-
     quit_surface = small_font.render('Press Q to Quit', True, white)
     quit_rect = quit_surface.get_rect(center=(window_x / 2, window_y / 3 + 175))
 
@@ -278,27 +270,20 @@ def game_loop():
         fruit_spawn = True
 
         game_window.fill(black)
-
         for pos in snake_body:
             pygame.draw.rect(game_window, green, pygame.Rect(pos[0], pos[1], 10, 10))
-
         pygame.draw.rect(game_window, red, pygame.Rect(fruit_position[0], fruit_position[1], 10, 10))
 
         if snake_position[0] < 0 or snake_position[0] > window_x - 10 or snake_position[1] < 0 or snake_position[1] > window_y - 10:
             gameover = True
             menu()
-
         if snake_position in snake_body[1:]:
             gameover = True
             menu()
 
         show_score(1, white, 'times new roman', 20)
-
         pygame.display.update()
-
         fps.tick(snake_speed)
 
 if __name__ == "__main__":
     display_intro()
-
-
