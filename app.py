@@ -18,12 +18,17 @@ green = pygame.Color(0, 255, 0)
 blue = pygame.Color(0, 0, 255)
 
 pygame.init()
+pygame.mixer.init()
+pygame.mixer.music.load("theme.mp3")
+eat_sound = pygame.mixer.Sound("eat.mp3")
+die_sound = pygame.mixer.Sound("die.mp3")
 pygame.display.set_caption('Snakes')
 game_window = pygame.display.set_mode((window_x, window_y))
 fps = pygame.time.Clock()
 
 pseudo = ""
 score = 0
+volume = 0.5  # <- volume global
 
 def show_score(choice, color, font, size):
     score_font = pygame.font.SysFont(font, size)
@@ -160,7 +165,7 @@ def reset_game():
     display_intro()
 
 def menu():
-    global paused, gameover, score
+    global paused, gameover, score, volume
 
     my_font = pygame.font.SysFont('times new roman', 50)
     small_font = pygame.font.SysFont('times new roman', 30)
@@ -179,10 +184,15 @@ def menu():
 
     restart_surface = small_font.render('Press R to Restart', True, white)
     restart_rect = restart_surface.get_rect(center=(window_x / 2, window_y / 3 + 75))
+
     reset_surface = small_font.render('Press C to go back to Homepage', True, white)
     reset_rect = reset_surface.get_rect(center=(window_x / 2, window_y / 3 + 125))
+
     quit_surface = small_font.render('Press Q to Quit', True, white)
     quit_rect = quit_surface.get_rect(center=(window_x / 2, window_y / 3 + 175))
+
+    volume_surface = small_font.render('Press X to increase and W to decrease volume', True, green)
+    volume_rect = volume_surface.get_rect(center=(window_x  /2, window_y / 3 + 300))
 
     while True:
         game_window.fill(black)
@@ -193,6 +203,7 @@ def menu():
         game_window.blit(restart_surface, restart_rect)
         game_window.blit(reset_surface, reset_rect)
         game_window.blit(quit_surface, quit_rect)
+        game_window.blit(volume_surface, volume_rect)
         pygame.display.update()
 
         for event in pygame.event.get():
@@ -206,14 +217,23 @@ def menu():
                 elif event.key == pygame.K_q:
                     pygame.quit()
                     sys.exit()
+                elif event.key == pygame.K_w:
+                    volume = max(0.0, volume - 0.1)
+                    pygame.mixer.music.set_volume(volume)
+                elif event.key == pygame.K_x:
+                    volume = min(1.0, volume + 0.1)
+                    pygame.mixer.music.set_volume(volume)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
 def game_loop():
-    global snake_position, snake_body, fruit_position, fruit_spawn, direction, change_to, score, snake_speed, gameover, pseudo
+    global snake_position, snake_body, fruit_position, fruit_spawn, direction, change_to, score, snake_speed, gameover, pseudo, volume
+    pygame.mixer.music.set_volume(volume)
+    pygame.mixer.music.play(-1)
 
     gameover = False
+
     snake_position = [100, 50]
     snake_body = [[100, 50], [90, 50], [80, 50], [70, 50]]
     fruit_position = [random.randrange(1, (window_x // 10)) * 10, random.randrange(1, (window_y // 10)) * 10]
@@ -236,6 +256,12 @@ def game_loop():
                     change_to = 'RIGHT'
                 if event.key == pygame.K_ESCAPE:
                     menu()
+                if event.key == pygame.K_w:
+                    volume = max(0.0, volume - 0.1)
+                    pygame.mixer.music.set_volume(volume)
+                elif event.key == pygame.K_x:
+                    volume = min(1.0, volume + 0.1)
+                    pygame.mixer.music.set_volume(volume)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -260,7 +286,9 @@ def game_loop():
 
         snake_body.insert(0, list(snake_position))
         if snake_position[0] == fruit_position[0] and snake_position[1] == fruit_position[1]:
+            eat_sound.play()
             score += 10
+            snake_speed += 2
             fruit_spawn = False
         else:
             snake_body.pop()
@@ -276,9 +304,11 @@ def game_loop():
 
         if snake_position[0] < 0 or snake_position[0] > window_x - 10 or snake_position[1] < 0 or snake_position[1] > window_y - 10:
             gameover = True
+            die_sound.play()
             menu()
         if snake_position in snake_body[1:]:
             gameover = True
+            die_sound.play()
             menu()
 
         show_score(1, white, 'times new roman', 20)
