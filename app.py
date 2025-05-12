@@ -19,7 +19,9 @@ blue = pygame.Color(0, 0, 255)
 
 pygame.init()
 pygame.mixer.init()
-pygame.mixer.music.load("Dark_Matter_Suite.mp3")
+pygame.mixer.music.load("theme.mp3")
+eat_sound = pygame.mixer.Sound("eat.mp3")
+die_sound = pygame.mixer.Sound("die.mp3")
 
 pygame.display.set_caption('Snakes')
 game_window = pygame.display.set_mode((window_x, window_y))
@@ -284,6 +286,7 @@ def game_loop(small_font = pygame.font.SysFont('times new roman', 16), message=N
 
         snake_body.insert(0, list(snake_position))
         if snake_position[0] == fruit_position[0] and snake_position[1] == fruit_position[1]:
+            eat_sound.play()
             score += 10
             snake_speed += 2
             fruit_spawn = False
@@ -305,10 +308,12 @@ def game_loop(small_font = pygame.font.SysFont('times new roman', 16), message=N
 
         if (snake_position[0] < 0 or snake_position[0] > window_x - 10 or
             snake_position[1] < 0 or snake_position[1] > window_y - 10):
+            die_sound.play()
             gameover = True
             menu()
         for block in snake_body[1:]:
             if snake_position[0] == block[0] and snake_position[1] == block[1]:
+                die_sound.play()
                 gameover = True
                 menu()
 
